@@ -3,123 +3,845 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>АУА — Качество воздуха в Туркестане</title>
-
+  <title>АУА — Качество воздуха в Казахстане</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #0f172a;
+      --surface: #1e293b;
+      --surface2:#273449;
+      --border:  rgba(255,255,255,0.08);
+      --accent:  #38bdf8;
+      --accent2: #818cf8;
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --good:    #22c55e;
+      --moderate:#eab308;
+      --bad:     #f97316;
+      --verybad: #ef4444;
+      --hazard:  #a855f7;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── ШАПКА ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    /* ── ПОИСК ── */
+    .search-wrap {
+      flex: 1;
+      max-width: 520px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 48px 10px 16px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+
+    .search-btn {
+      position: absolute;
+      right: 6px; top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 8px;
+      width: 34px; height: 34px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: opacity 0.2s;
+    }
+    .search-btn:hover { opacity: 0.85; }
+
+    /* Список подсказок */
+    .suggestions {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .suggestions.open { display: block; }
+
+    .suggestion-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: var(--surface2); }
+    .suggestion-item .city-name { font-weight: 500; }
+    .suggestion-item .city-region { color: var(--muted); font-size: 11px; }
+
+    /* Популярные города */
+    .popular-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .chip-label {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(56,189,248,0.08);
+    }
+
+    /* ── РАСКЛАДКА ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── КАРТА ── */
+    #map {
+      flex: 1;
+      z-index: 1;
+    }
+
+    .leaflet-container { background: #e8f0f7 !important; }
+
+    /* ── БОКОВАЯ ПАНЕЛЬ РЕЗУЛЬТАТА ── */
+    .result-panel {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+
+    .result-panel.hidden {
+      transform: translateX(340px);
+      position: absolute;
+      right: 0;
+    }
+
+    .result-panel::-webkit-scrollbar { width: 4px; }
+    .result-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* Заглушка — пусто */
+    .panel-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+      padding: 32px;
+      text-align: center;
+    }
+
+    .panel-empty-icon { font-size: 48px; opacity: 0.4; }
+    .panel-empty-title { font-size: 15px; font-weight: 500; color: var(--text); opacity: 0.5; }
+    .panel-empty-sub { font-size: 12px; line-height: 1.6; }
+
+    /* Результат */
+    .result-city-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(56,189,248,0.05), rgba(129,140,248,0.05));
+    }
+
+    .result-city-name {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .result-station {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .result-aqi-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .result-aqi-num {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .result-aqi-right { display: flex; flex-direction: column; gap: 6px; }
+
+    .result-badge {
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .result-time { font-size: 11px; color: var(--muted); }
+
+    .result-bar-track {
+      height: 6px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .result-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 1s ease;
+    }
+
+    /* Метрики */
+    .result-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .metric-name { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+    .metric-val { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 600; }
+    .metric-unit { font-size: 8px; font-weight: 400; color: var(--muted); }
+
+    /* Советы */
+    .advice-item {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(241,245,249,0.75);
+      margin-bottom: 8px;
+    }
+
+    /* Легенда */
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-range { color: var(--muted); font-size: 11px; margin-left: auto; }
+
+    /* Footer */
+    .panel-footer {
+      margin-top: auto;
+      padding: 14px 20px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      line-height: 1.6;
+    }
+    .panel-footer a { color: var(--accent); text-decoration: none; }
+
+    /* Попапы на карте */
+    .leaflet-popup-content-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-close-button { color: var(--muted) !important; }
+
+    .map-popup { min-width: 160px; font-family: 'Inter', sans-serif; }
+    .map-popup-name { font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    .map-popup-aqi { font-family: 'Unbounded', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; }
+    .map-popup-label { font-size: 10px; margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Загрузка внутри панели */
+    .panel-loading {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .panel-loading-text { font-size: 13px; color: var(--muted); }
+
+    /* Ошибка */
+    .panel-error {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 32px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .panel-error-icon { font-size: 40px; }
+    .panel-error-title { font-size: 14px; font-weight: 600; color: var(--verybad); }
+    .panel-error-sub { font-size: 12px; line-height: 1.6; }
+
+    /* Адаптив */
+    @media (max-width: 768px) {
+      .popular-chips { display: none; }
+      .result-panel { width: 100%; position: absolute; bottom: 0; left: 0; right: 0; max-height: 55vh; border-left: none; border-top: 1px solid var(--border); transform: translateY(100%); transition: transform 0.3s; }
+      .result-panel.show-mobile { transform: translateY(0); }
+      .layout { position: relative; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Token Modal -->
-  <div id="token-modal">
-    <div class="modal-card">
-      <button class="modal-close" onclick="closeTokenModal()">✕</button>
-      <div class="modal-logo">АУА</div>
-      <div class="modal-title">Подключить реальные данные</div>
-      <div class="modal-desc">
-        Вставьте бесплатный токен от
-        <a href="https://aqicn.org/data-platform/token" target="_blank">aqicn.org</a>
-        чтобы видеть реальные данные вместо демо.
-      </div>
-      <div class="modal-steps">
-        <b>1.</b> Зайти на <b>aqicn.org/data-platform/token</b><br>
-        <b>2.</b> Ввести email → нажать Submit<br>
-        <b>3.</b> Открыть письмо → скопировать токен<br>
-        <b>4.</b> Вставить сюда и нажать ▶
-      </div>
-      <div class="modal-input-wrap">
-        <input id="key-input" type="text" placeholder="Вставьте токен..." class="modal-input"/>
-        <button onclick="submitKey()" class="modal-btn">▶</button>
-      </div>
-      <div id="key-error" class="modal-error">❌ Токен не работает. Проверьте и попробуйте снова.</div>
-    </div>
+<!-- ШАПКА -->
+<header>
+  <div class="logo">АУА 🇰🇿</div>
+
+  <div class="search-wrap">
+    <input
+      id="search-input"
+      class="search-input"
+      type="text"
+      placeholder="Введите город или населённый пункт Казахстана..."
+      autocomplete="off"
+    />
+    <button class="search-btn" onclick="doSearch()">🔍</button>
+    <div class="suggestions" id="suggestions"></div>
   </div>
 
-  <!-- Loading -->
-  <div id="loading">
-    <div class="loading-logo">АУА</div>
-    <div class="loading-text" id="loading-text">Загружаем данные о воздухе Туркестана...</div>
-    <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar"></div></div>
+  <div class="popular-chips">
+    <span class="chip-label">Быстрый поиск:</span>
+    <span class="chip" onclick="searchCity('Алматы')">Алматы</span>
+    <span class="chip" onclick="searchCity('Астана')">Астана</span>
+    <span class="chip" onclick="searchCity('Шымкент')">Шымкент</span>
+    <span class="chip" onclick="searchCity('Туркестан')">Туркестан</span>
+    <span class="chip" onclick="searchCity('Караганда')">Караганда</span>
+    <span class="chip" onclick="searchCity('Актобе')">Актобе</span>
   </div>
+</header>
 
-  <!-- Header -->
-  <header>
-    <div class="logo">АУА<span> / ауа</span></div>
-    <div class="header-center">
-      <div class="header-title">Мониторинг воздуха</div>
-      <div class="header-location">📍 Туркестан, Казахстан</div>
-    </div>
-    <div class="header-right">
-      <div class="status-pill" id="status-pill">
-        <div class="pulse" id="pulse-dot"></div>
-        <span id="status-text">Загрузка...</span>
+<!-- РАСКЛАДКА -->
+<div class="layout">
+  <div id="map"></div>
+
+  <!-- БОКОВАЯ ПАНЕЛЬ -->
+  <div class="result-panel" id="result-panel">
+
+    <!-- Пустое состояние -->
+    <div class="panel-empty" id="panel-empty">
+      <div class="panel-empty-icon">🗺️</div>
+      <div class="panel-empty-title">Введите населённый пункт</div>
+      <div class="panel-empty-sub">Поиск по любому городу, посёлку или селу Казахстана. Данные обновляются каждый час.</div>
+
+      <div style="margin-top: 24px; width: 100%;">
+        <div class="result-section-title" style="margin-bottom: 10px;">📊 Шкала AQI</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div><span>Хорошее</span><span class="legend-range">0–50</span></div>
+        <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span>Умеренное</span><span class="legend-range">51–100</span></div>
+        <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span>Нездоровое для уязвимых</span><span class="legend-range">101–150</span></div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span>Нездоровое</span><span class="legend-range">151–200</span></div>
+        <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span>Очень нездоровое</span><span class="legend-range">201+</span></div>
       </div>
-      <button id="token-btn" class="token-btn" onclick="openTokenModal()">🔑 WAQI токен</button>
     </div>
-  </header>
 
-  <!-- Layout -->
-  <div class="layout">
+    <!-- Загрузка -->
+    <div class="panel-loading" id="panel-loading" style="display:none">
+      <div class="spinner"></div>
+      <div class="panel-loading-text" id="loading-text">Ищем данные...</div>
+    </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <!-- Ошибка -->
+    <div class="panel-error" id="panel-error" style="display:none">
+      <div class="panel-error-icon">😞</div>
+      <div class="panel-error-title">Данные не найдены</div>
+      <div class="panel-error-sub" id="error-text">По этому населённому пункту нет данных мониторинга. Попробуйте ближайший крупный город.</div>
+    </div>
 
-      <div class="aqi-hero">
-        <div class="aqi-label">Общий индекс AQI · Туркестан</div>
-        <div class="aqi-row">
-          <div class="aqi-number" id="main-aqi">—</div>
-          <div class="aqi-badge" id="main-badge">—</div>
+    <!-- Результат -->
+    <div id="panel-result" style="display:none">
+      <div class="result-city-header">
+        <div class="result-city-name" id="res-city">—</div>
+        <div class="result-station" id="res-station">—</div>
+        <div class="result-aqi-row">
+          <div class="result-aqi-num" id="res-aqi">—</div>
+          <div class="result-aqi-right">
+            <div class="result-badge" id="res-badge">—</div>
+            <div class="result-time" id="res-time">—</div>
+          </div>
         </div>
-        <div class="aqi-bar-track">
-          <div class="aqi-bar-fill" id="main-bar"></div>
+        <div class="result-bar-track">
+          <div class="result-bar-fill" id="res-bar"></div>
         </div>
+      </div>
+
+      <div class="result-section">
+        <div class="result-section-title">🧪 Состав воздуха</div>
         <div class="metrics-grid">
-          <div class="metric"><div class="metric-name">PM2.5</div><div class="metric-val"><span id="m-pm25">—</span> <span class="metric-unit">μg/m³</span></div></div>
-          <div class="metric"><div class="metric-name">PM10</div><div class="metric-val"><span id="m-pm10">—</span> <span class="metric-unit">μg/m³</span></div></div>
-          <div class="metric"><div class="metric-name">CO</div><div class="metric-val"><span id="m-co">—</span> <span class="metric-unit">ppm</span></div></div>
-          <div class="metric"><div class="metric-name">NO₂</div><div class="metric-val"><span id="m-no2">—</span> <span class="metric-unit">ppb</span></div></div>
-          <div class="metric"><div class="metric-name">O₃</div><div class="metric-val"><span id="m-o3">—</span> <span class="metric-unit">ppb</span></div></div>
-          <div class="metric"><div class="metric-name">SO₂</div><div class="metric-val"><span id="m-so2">—</span> <span class="metric-unit">ppb</span></div></div>
+          <div class="metric"><div class="metric-name">PM2.5</div><div class="metric-val"><span id="r-pm25">—</span><span class="metric-unit"> μg</span></div></div>
+          <div class="metric"><div class="metric-name">PM10</div><div class="metric-val"><span id="r-pm10">—</span><span class="metric-unit"> μg</span></div></div>
+          <div class="metric"><div class="metric-name">CO</div><div class="metric-val"><span id="r-co">—</span><span class="metric-unit"> ppm</span></div></div>
+          <div class="metric"><div class="metric-name">NO₂</div><div class="metric-val"><span id="r-no2">—</span><span class="metric-unit"> ppb</span></div></div>
+          <div class="metric"><div class="metric-name">O₃</div><div class="metric-val"><span id="r-o3">—</span><span class="metric-unit"> ppb</span></div></div>
+          <div class="metric"><div class="metric-name">SO₂</div><div class="metric-val"><span id="r-so2">—</span><span class="metric-unit"> ppb</span></div></div>
         </div>
       </div>
 
-      <div class="section-label">🏙 Точки мониторинга</div>
-      <div class="district-list" id="district-list"></div>
-
-      <div class="section-label">💡 Рекомендации</div>
-      <div class="advice-box">
-        <div class="advice-title">На основе текущих данных</div>
-        <div id="advice-content"><div class="advice-item"><span>⏳</span><span>Ожидаем данные...</span></div></div>
+      <div class="result-section">
+        <div class="result-section-title">💡 Рекомендации</div>
+        <div id="res-advice"></div>
       </div>
+    </div>
 
-      <div class="section-label">📊 Шкала AQI</div>
-      <div class="legend-box">
-        <div class="legend-title">Индекс качества воздуха</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div><span>Хорошее</span><span class="legend-range">0–50</span></div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#eab308"></div><span>Умеренное</span><span class="legend-range">51–100</span></div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#f97316"></div><span>Нездоровое для уязвимых</span><span class="legend-range">101–150</span></div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div><span>Нездоровое</span><span class="legend-range">151–200</span></div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#9333ea"></div><span>Очень нездоровое</span><span class="legend-range">201+</span></div>
-      </div>
-
-      <div class="source-badge">
-        🛰 Данные: <a href="https://waqi.info" target="_blank">World Air Quality Index</a> (WAQI)<br>
-        Проект учеников 8 класса · Туркестан 2025
-      </div>
-
-    </aside>
-
-    <!-- Map -->
-    <div id="map"></div>
-
+    <div class="panel-footer">
+      🛰 Данные: <a href="https://waqi.info" target="_blank">World Air Quality Index (WAQI)</a><br>
+      Проект учеников 8 класса · Туркестан 2025
+    </div>
   </div>
+</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/helpers.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ─── КОНФИГ ──────────────────────────────────
+const TOKEN = 'c5fab67cf401217adb544bce89cc47d58fe717fe';
+
+// Популярные города КЗ с координатами для быстрого поиска
+const KZ_CITIES = [
+  { name: 'Алматы',       region: 'Алматинская обл.',  lat: 43.238, lon: 76.945 },
+  { name: 'Астана',       region: 'Столица',            lat: 51.180, lon: 71.446 },
+  { name: 'Шымкент',      region: 'Туркестанская обл.', lat: 42.317, lon: 69.596 },
+  { name: 'Туркестан',    region: 'Туркестанская обл.', lat: 43.297, lon: 68.270 },
+  { name: 'Актобе',       region: 'Актюбинская обл.',   lat: 50.279, lon: 57.207 },
+  { name: 'Тараз',        region: 'Жамбылская обл.',    lat: 42.900, lon: 71.378 },
+  { name: 'Павлодар',     region: 'Павлодарская обл.',  lat: 52.285, lon: 76.940 },
+  { name: 'Усть-Каменогорск', region: 'ВКО',           lat: 49.979, lon: 82.628 },
+  { name: 'Семей',        region: 'Абайская обл.',      lat: 50.411, lon: 80.227 },
+  { name: 'Атырау',       region: 'Атырауская обл.',    lat: 47.095, lon: 51.928 },
+  { name: 'Костанай',     region: 'Костанайская обл.',  lat: 53.214, lon: 63.624 },
+  { name: 'Кызылорда',    region: 'Кызылординская обл.',lat: 44.853, lon: 65.510 },
+  { name: 'Уральск',      region: 'Западно-Казахстанская обл.', lat: 51.233, lon: 51.366 },
+  { name: 'Петропавловск',region: 'Северо-Казахстанская обл.',  lat: 54.866, lon: 69.153 },
+  { name: 'Актау',        region: 'Мангистауская обл.', lat: 43.652, lon: 51.157 },
+  { name: 'Темиртау',     region: 'Карагандинская обл.',lat: 50.058, lon: 72.962 },
+  { name: 'Кентау',       region: 'Туркестанская обл.', lat: 43.516, lon: 68.509 },
+  { name: 'Талдыкорган',  region: 'Алматинская обл.',   lat: 44.998, lon: 78.380 },
+  { name: 'Экибастуз',    region: 'Павлодарская обл.',  lat: 51.723, lon: 75.324 },
+  { name: 'Рудный',       region: 'Костанайская обл.',  lat: 52.965, lon: 63.128 },
+  { name: 'Жезказган',    region: 'Улытауская обл.',    lat: 47.793, lon: 67.710 },
+  { name: 'Балхаш',       region: 'Карагандинская обл.',lat: 46.843, lon: 74.995 },
+  { name: 'Сатпаев',      region: 'Карагандинская обл.',lat: 47.905, lon: 67.531 },
+  { name: 'Зыряновск',    region: 'ВКО',                lat: 49.739, lon: 84.265 },
+  { name: 'Арысь',        region: 'Туркестанская обл.', lat: 42.431, lon: 68.809 },
+  { name: 'Лисаковск',    region: 'Костанайская обл.',  lat: 52.651, lon: 62.534 },
+];
+
+// ─── КАРТА ───────────────────────────────────
+const map = L.map('map', { center: [48.0, 67.0], zoom: 5 });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 18,
+}).addTo(map);
+
+let currentMarker = null;
+
+// ─── AQI HELPERS ─────────────────────────────
+function aqiColor(v) {
+  if (v <= 50)  return '#22c55e';
+  if (v <= 100) return '#eab308';
+  if (v <= 150) return '#f97316';
+  if (v <= 200) return '#ef4444';
+  return '#a855f7';
+}
+
+function aqiLabel(v) {
+  if (v <= 50)  return 'Хорошее';
+  if (v <= 100) return 'Умеренное';
+  if (v <= 150) return 'Нездоровое для уязвимых';
+  if (v <= 200) return 'Нездоровое';
+  return 'Очень нездоровое';
+}
+
+function getAdvice(aqi) {
+  if (aqi <= 50) return [
+    ['✅', 'Воздух чистый — отличный день для прогулки'],
+    ['🏃', 'Спорт на улице безопасен для всех'],
+    ['🪟', 'Можно открывать окна для проветривания'],
+  ];
+  if (aqi <= 100) return [
+    ['⚠️', 'Чувствительным людям ограничить время на улице'],
+    ['🧒', 'Детям и пожилым — прогулки до 1–2 часов'],
+    ['🪟', 'Утром окна лучше держать закрытыми'],
+  ];
+  if (aqi <= 150) return [
+    ['🚫', 'Чувствительным группам не рекомендуется выходить'],
+    ['😷', 'При выходе используйте маску FFP2'],
+    ['🏠', 'По возможности оставайтесь в помещении'],
+  ];
+  return [
+    ['🚨', 'Опасный уровень — оставайтесь дома'],
+    ['😷', 'Обязательна маска N95 или FFP3'],
+    ['🏥', 'Уязвимым группам — проконсультируйтесь с врачом'],
+  ];
+}
+
+// ─── ПОИСК ПОДСКАЗОК ─────────────────────────
+const searchInput = document.getElementById('search-input');
+const suggestionsEl = document.getElementById('suggestions');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (q.length < 2) { suggestionsEl.classList.remove('open'); return; }
+
+  const matches = KZ_CITIES
+    .filter(c => c.name.toLowerCase().includes(q))
+    .slice(0, 6);
+
+  if (!matches.length) { suggestionsEl.classList.remove('open'); return; }
+
+  suggestionsEl.innerHTML = matches.map(c => `
+    <div class="suggestion-item" onclick="searchCity('${c.name}')">
+      <span>📍</span>
+      <div>
+        <div class="city-name">${c.name}</div>
+        <div class="city-region">${c.region}</div>
+      </div>
+    </div>`).join('');
+
+  suggestionsEl.classList.add('open');
+});
+
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+  if (e.key === 'Escape') suggestionsEl.classList.remove('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    suggestionsEl.classList.remove('open');
+  }
+});
+
+// ─── ПОИСК ───────────────────────────────────
+function doSearch() {
+  const q = searchInput.value.trim();
+  if (q) searchCity(q);
+}
+
+async function searchCity(cityName) {
+  searchInput.value = cityName;
+  suggestionsEl.classList.remove('open');
+
+  showLoading(`Ищем данные для "${cityName}"...`);
+
+  try {
+    // 1. Найти координаты города
+    const coords = await geocodeCity(cityName);
+    if (!coords) throw new Error('Город не найден');
+
+    // 2. Запросить WAQI по координатам
+    const url  = `https://api.waqi.info/feed/geo:${coords.lat};${coords.lon}/?token=${TOKEN}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+
+    if (json.status !== 'ok') throw new Error('Нет данных WAQI для этой точки');
+
+    const d   = json.data;
+    const aqi = typeof d.aqi === 'number' ? d.aqi : parseInt(d.aqi);
+    if (!aqi || isNaN(aqi)) throw new Error('Нет данных AQI');
+
+    showResult({
+      cityName,
+      stationName: d.city?.name || cityName,
+      lat: d.city?.geo?.[0] || coords.lat,
+      lon: d.city?.geo?.[1] || coords.lon,
+      aqi,
+      iaqi: d.iaqi || {},
+      time: d.time?.s || '',
+    });
+
+  } catch (err) {
+    console.warn('[АУА]', err.message);
+    showError(err.message);
+  }
+}
+
+// Геокодирование через Nominatim (бесплатно)
+async function geocodeCity(name) {
+  // Сначала ищем в нашей базе
+  const found = KZ_CITIES.find(c =>
+    c.name.toLowerCase() === name.toLowerCase() ||
+    c.name.toLowerCase().includes(name.toLowerCase())
+  );
+  if (found) return { lat: found.lat, lon: found.lon };
+
+  // Иначе — Nominatim
+  try {
+    const url  = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name + ', Казахстан')}&format=json&limit=1`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'ru' } });
+    const json = await res.json();
+    if (json.length) return { lat: parseFloat(json[0].lat), lon: parseFloat(json[0].lon) };
+  } catch {}
+
+  return null;
+}
+
+// ─── МАРКЕР НА КАРТЕ ─────────────────────────
+function placeMarker(data) {
+  if (currentMarker) map.removeLayer(currentMarker);
+
+  const color = aqiColor(data.aqi);
+
+  // Пульсирующий круг
+  const circle = L.circle([data.lat, data.lon], {
+    radius: 15000,
+    color,
+    fillColor: color,
+    fillOpacity: 0.25,
+    weight: 3,
+    opacity: 0.9,
+  }).addTo(map);
+
+  // Маркер-карточка
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="
+      background:#fff;
+      border: 3px solid ${color};
+      border-radius: 12px;
+      padding: 8px 12px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2), 0 0 0 6px ${color}22;
+      white-space: nowrap;
+      pointer-events: none;
+      font-family: 'Inter', sans-serif;
+    ">
+      <div style="font-size:10px;color:#374151;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">
+        📍 ${data.cityName}
+      </div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:26px;font-weight:800;color:${color};line-height:1">
+        ${data.aqi}
+      </div>
+      <div style="font-size:10px;color:${color};font-weight:700;margin-top:2px;">
+        ${aqiLabel(data.aqi)}
+      </div>
+    </div>`,
+    iconAnchor: [70, 35],
+    iconSize: [140, 70],
+  });
+
+  const marker = L.marker([data.lat, data.lon], { icon }).addTo(map);
+
+  currentMarker = L.layerGroup([circle, marker]).addTo(map);
+  map.flyTo([data.lat, data.lon], 11, { duration: 1.2 });
+}
+
+// ─── ОТОБРАЖЕНИЕ ─────────────────────────────
+function showLoading(text) {
+  document.getElementById('panel-empty').style.display   = 'none';
+  document.getElementById('panel-loading').style.display = 'flex';
+  document.getElementById('panel-error').style.display   = 'none';
+  document.getElementById('panel-result').style.display  = 'none';
+  document.getElementById('loading-text').textContent    = text;
+}
+
+function showError(msg) {
+  document.getElementById('panel-empty').style.display   = 'none';
+  document.getElementById('panel-loading').style.display = 'none';
+  document.getElementById('panel-error').style.display   = 'flex';
+  document.getElementById('panel-result').style.display  = 'none';
+  document.getElementById('error-text').textContent      =
+    'По запросу нет данных мониторинга. Попробуйте ближайший крупный город Казахстана.';
+}
+
+function showResult(data) {
+  const { cityName, stationName, aqi, iaqi, time } = data;
+  const color = aqiColor(aqi);
+  const label = aqiLabel(aqi);
+  const pct   = Math.min((aqi / 300) * 100, 100).toFixed(1);
+  const v     = key => iaqi[key]?.v ?? '—';
+
+  document.getElementById('panel-empty').style.display   = 'none';
+  document.getElementById('panel-loading').style.display = 'none';
+  document.getElementById('panel-error').style.display   = 'none';
+  document.getElementById('panel-result').style.display  = 'block';
+
+  document.getElementById('res-city').textContent    = cityName;
+  document.getElementById('res-station').textContent = '📡 Станция: ' + stationName;
+  document.getElementById('res-aqi').textContent     = aqi;
+  document.getElementById('res-aqi').style.color     = color;
+  document.getElementById('res-time').textContent    = time ? '🕐 ' + time : '';
+
+  const badge = document.getElementById('res-badge');
+  badge.textContent      = label;
+  badge.style.background = color + '22';
+  badge.style.color      = color;
+
+  const bar = document.getElementById('res-bar');
+  bar.style.width      = pct + '%';
+  bar.style.background = `linear-gradient(90deg, #22c55e, ${color})`;
+
+  document.getElementById('r-pm25').textContent = v('pm25');
+  document.getElementById('r-pm10').textContent = v('pm10');
+  document.getElementById('r-co').textContent   = v('co');
+  document.getElementById('r-no2').textContent  = v('no2');
+  document.getElementById('r-o3').textContent   = v('o3');
+  document.getElementById('r-so2').textContent  = v('so2');
+
+  document.getElementById('res-advice').innerHTML =
+    getAdvice(aqi).map(([icon, text]) =>
+      `<div class="advice-item"><span>${icon}</span><span>${text}</span></div>`
+    ).join('');
+
+  placeMarker(data);
+}
+
+// ─── КЛИК ПО КАРТЕ ───────────────────────────
+map.on('click', async (e) => {
+  const { lat, lng } = e.latlng;
+  showLoading('Определяем населённый пункт...');
+
+  try {
+    // Reverse geocode
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`;
+    const geoRes = await fetch(geoUrl);
+    const geoJson = await geoRes.json();
+
+    const cityName =
+      geoJson.address?.city ||
+      geoJson.address?.town ||
+      geoJson.address?.village ||
+      geoJson.address?.county ||
+      'Эта точка';
+
+    const url  = `https://api.waqi.info/feed/geo:${lat};${lng}/?token=${TOKEN}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+
+    if (json.status !== 'ok') throw new Error('no data');
+
+    const d   = json.data;
+    const aqi = typeof d.aqi === 'number' ? d.aqi : parseInt(d.aqi);
+    if (!aqi || isNaN(aqi)) throw new Error('no aqi');
+
+    showResult({
+      cityName,
+      stationName: d.city?.name || cityName,
+      lat: d.city?.geo?.[0] || lat,
+      lon: d.city?.geo?.[1] || lng,
+      aqi,
+      iaqi: d.iaqi || {},
+      time: d.time?.s || '',
+    });
+  } catch {
+    showError('');
+  }
+});
+</script>
 </body>
 </html>
