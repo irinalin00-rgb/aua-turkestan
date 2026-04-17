@@ -1,935 +1,125 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>АУА — Качество воздуха в Туркестане</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>АУА — Качество воздуха в Туркестане</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-
-<style>
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --border: rgba(255,255,255,0.07);
-    --accent: #00e5ff;
-    --accent2: #7c3aed;
-    --good: #22c55e;
-    --moderate: #eab308;
-    --bad: #ef4444;
-    --vbad: #9333ea;
-    --text: #f0f4ff;
-    --muted: #6b7280;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 28px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(10,14,26,0.97);
-    backdrop-filter: blur(16px);
-    z-index: 1000;
-    position: relative;
-  }
-
-  .logo {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 20px;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .logo span { font-weight: 300; }
-
-  .header-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-  .header-title {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .header-location { font-size: 12px; color: var(--accent); font-weight: 500; }
-
-  .status-pill {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    border-radius: 100px;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 500;
-    border: 1px solid;
-    transition: all 0.5s;
-  }
-
-  .pulse {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-    flex-shrink: 0;
-  }
-
-  @keyframes pulse {
-    0%,100%{opacity:1;transform:scale(1)}
-    50%{opacity:.4;transform:scale(1.4)}
-  }
-
-  .layout {
-    display: flex;
-    flex: 1;
-    height: calc(100vh - 61px);
-  }
-
-  .sidebar {
-    width: 320px;
-    flex-shrink: 0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sidebar::-webkit-scrollbar { width: 4px; }
-  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-
-  .aqi-hero {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-    background: linear-gradient(135deg, rgba(0,229,255,0.05), rgba(124,58,237,0.05));
-    position: relative;
-    overflow: hidden;
-  }
-  .aqi-hero::after {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 140px; height: 140px;
-    background: radial-gradient(circle, rgba(0,229,255,0.1), transparent 70%);
-    pointer-events: none;
-  }
-
-  .aqi-label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-
-  .aqi-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-
-  .aqi-number {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 56px;
-    font-weight: 800;
-    line-height: 1;
-    transition: color 0.5s;
-  }
-
-  .aqi-badge {
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .aqi-bar-track {
-    height: 5px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 100px;
-    overflow: hidden;
-    margin: 10px 0;
-  }
-
-  .aqi-bar-fill {
-    height: 100%;
-    border-radius: 100px;
-    transition: width 1s ease, background 0.5s;
-  }
-
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .metric {
-    background: rgba(255,255,255,0.04);
-    border-radius: 8px;
-    padding: 8px 10px;
-  }
-  .metric-name {
-    font-size: 9px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-  .metric-val {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .metric-unit { font-size: 8px; font-weight: 400; color: var(--muted); }
-
-  .section-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 14px 20px 8px;
-  }
-
-  .district-list {
-    padding: 0 12px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .district-item {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .district-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
-  .district-item.active { border-color: rgba(0,229,255,0.35); background: rgba(0,229,255,0.05); }
-
-  .district-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .district-info { flex: 1; min-width: 0; }
-  .district-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-  .district-sub { font-size: 10px; color: var(--muted); }
-  .district-aqi {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .advice-box {
-    margin: 0 12px 12px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-  }
-  .advice-title {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-  .advice-item {
-    display: flex;
-    gap: 8px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: rgba(240,244,255,0.7);
-    margin-bottom: 7px;
-  }
-
-  .legend-box {
-    margin: 0 12px 20px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-  }
-  .legend-title {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-  .legend-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-    font-size: 12px;
-  }
-  .legend-swatch { width: 28px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-  .legend-range { color: var(--muted); font-size: 11px; margin-left: auto; }
-
-  /* Source badge */
-  .source-badge {
-    margin: 0 12px 12px;
-    background: rgba(0,229,255,0.05);
-    border: 1px solid rgba(0,229,255,0.15);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .source-badge a { color: var(--accent); text-decoration: none; }
-
-  #map { flex: 1; z-index: 1; }
-
-  .leaflet-container { background: #0d1525 !important; font-family: 'Inter', sans-serif; }
-
-  .leaflet-popup-content-wrapper {
-    background: rgba(17,24,39,0.97);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    color: var(--text);
-    backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .leaflet-popup-tip { background: rgba(17,24,39,0.97); }
-  .leaflet-popup-close-button { color: var(--muted) !important; }
-
-  .popup-inner { padding: 4px 2px; min-width: 200px; }
-  .popup-name { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
-  .popup-aqi-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .popup-aqi-num { font-family: 'Unbounded', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; }
-  .popup-aqi-info { display: flex; flex-direction: column; gap: 2px; }
-  .popup-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; }
-  .popup-coords { font-size: 10px; color: var(--muted); }
-  .popup-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-  .popup-metric { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; font-size: 11px; }
-  .popup-metric-label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
-  .popup-metric-val { font-weight: 600; margin-top: 2px; }
-  .popup-source { font-size: 10px; color: var(--muted); margin-top: 8px; text-align: right; }
-
-  /* API Key input overlay */
-  #key-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(10,14,26,0.96);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    backdrop-filter: blur(8px);
-  }
-
-  .key-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 36px;
-    max-width: 440px;
-    width: 90%;
-    text-align: center;
-  }
-
-  .key-logo {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
-  }
-
-  .key-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .key-desc {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.7;
-    margin-bottom: 24px;
-  }
-
-  .key-desc a { color: var(--accent); text-decoration: none; font-weight: 500; }
-
-  .key-steps {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    text-align: left;
-    margin-bottom: 20px;
-    font-size: 12px;
-    color: rgba(240,244,255,0.7);
-    line-height: 1.8;
-  }
-
-  .key-steps b { color: var(--accent); }
-
-  .key-input-wrap {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .key-input {
-    flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .key-input:focus { border-color: rgba(0,229,255,0.4); }
-  .key-input::placeholder { color: var(--muted); }
-
-  .key-btn {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none;
-    border-radius: 10px;
-    padding: 10px 18px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'Unbounded', sans-serif;
-    transition: opacity 0.2s;
-  }
-  .key-btn:hover { opacity: 0.85; }
-
-  .key-demo {
-    font-size: 12px;
-    color: var(--muted);
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .key-demo:hover { color: var(--text); }
-
-  .key-error {
-    font-size: 12px;
-    color: var(--bad);
-    margin-top: 8px;
-    display: none;
-  }
-
-  /* Loading */
-  #loading {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-    gap: 16px;
-    transition: opacity 0.5s;
-  }
-  #loading.hidden { opacity: 0; pointer-events: none; }
-
-  .loading-logo {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .loading-text { font-size: 13px; color: var(--muted); }
-  .loading-bar { width: 200px; height: 3px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; }
-  .loading-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 100px;
-    width: 0%;
-    transition: width 0.3s ease;
-  }
-
-  @media (max-width: 768px) {
-    .layout { flex-direction: column; height: auto; }
-    .sidebar { width: 100%; height: auto; max-height: 50vh; }
-    #map { height: 50vh; }
-  }
-</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
 
-<!-- API Key Overlay -->
-<div id="key-overlay">
-  <div class="key-card">
-    <div class="key-logo">АУА</div>
-    <div class="key-title">Введите токен WAQI</div>
-    <div class="key-desc">
-      Для отображения реальных данных нужен бесплатный токен от
-      <a href="https://aqicn.org/data-platform/token" target="_blank">aqicn.org</a>
-    </div>
-
-    <div class="key-steps">
-      <b>1.</b> Перейти на <b>aqicn.org/data-platform/token</b><br>
-      <b>2.</b> Ввести email → нажать Submit<br>
-      <b>3.</b> Открыть письмо → скопировать токен<br>
-      <b>4.</b> Вставить токен сюда 👇
-    </div>
-
-    <div class="key-input-wrap">
-      <input class="key-input" id="key-input" type="text" placeholder="Вставьте токен сюда..."/>
-      <button class="key-btn" onclick="submitKey()">▶</button>
-    </div>
-    <div class="key-error" id="key-error">❌ Токен не работает. Проверьте и попробуйте снова.</div>
-    <br>
-    <span class="key-demo" onclick="useDemo()">Использовать демо-данные без токена →</span>
-  </div>
-</div>
-
-<!-- Loading -->
-<div id="loading" style="display:none">
-  <div class="loading-logo">АУА</div>
-  <div class="loading-text" id="loading-text">Загружаем данные WAQI...</div>
-  <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar"></div></div>
-</div>
-
-<header>
-  <div class="logo">АУА<span> / ауа</span></div>
-  <div class="header-center">
-    <div class="header-title">Мониторинг воздуха</div>
-    <div class="header-location">📍 Туркестан, Казахстан</div>
-  </div>
-  <div class="status-pill" id="status-pill" style="background:rgba(107,114,128,0.1);border-color:rgba(107,114,128,0.25);color:var(--muted)">
-    <div class="pulse" id="pulse-dot" style="background:var(--muted)"></div>
-    <span id="status-text">Ожидание...</span>
-  </div>
-</header>
-
-<div class="layout">
-  <div class="sidebar">
-    <div class="aqi-hero">
-      <div class="aqi-label">Общий индекс AQI · Туркестан</div>
-      <div class="aqi-row">
-        <div class="aqi-number" id="main-aqi">—</div>
-        <div><div class="aqi-badge" id="main-badge" style="background:rgba(107,114,128,0.1);color:var(--muted)">—</div></div>
+  <!-- Token Modal -->
+  <div id="token-modal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeTokenModal()">✕</button>
+      <div class="modal-logo">АУА</div>
+      <div class="modal-title">Подключить реальные данные</div>
+      <div class="modal-desc">
+        Вставьте бесплатный токен от
+        <a href="https://aqicn.org/data-platform/token" target="_blank">aqicn.org</a>
+        чтобы видеть реальные данные вместо демо.
       </div>
-      <div class="aqi-bar-track">
-        <div class="aqi-bar-fill" id="main-bar" style="width:0%;background:var(--muted)"></div>
+      <div class="modal-steps">
+        <b>1.</b> Зайти на <b>aqicn.org/data-platform/token</b><br>
+        <b>2.</b> Ввести email → нажать Submit<br>
+        <b>3.</b> Открыть письмо → скопировать токен<br>
+        <b>4.</b> Вставить сюда и нажать ▶
       </div>
-      <div class="metrics-grid">
-        <div class="metric"><div class="metric-name">PM2.5</div><div class="metric-val"><span id="m-pm25">—</span> <span class="metric-unit">μg/m³</span></div></div>
-        <div class="metric"><div class="metric-name">PM10</div><div class="metric-val"><span id="m-pm10">—</span> <span class="metric-unit">μg/m³</span></div></div>
-        <div class="metric"><div class="metric-name">CO</div><div class="metric-val"><span id="m-co">—</span> <span class="metric-unit">ppm</span></div></div>
-        <div class="metric"><div class="metric-name">NO₂</div><div class="metric-val"><span id="m-no2">—</span> <span class="metric-unit">ppb</span></div></div>
-        <div class="metric"><div class="metric-name">O₃</div><div class="metric-val"><span id="m-o3">—</span> <span class="metric-unit">ppb</span></div></div>
-        <div class="metric"><div class="metric-name">SO₂</div><div class="metric-val"><span id="m-so2">—</span> <span class="metric-unit">ppb</span></div></div>
+      <div class="modal-input-wrap">
+        <input id="key-input" type="text" placeholder="Вставьте токен..." class="modal-input"/>
+        <button onclick="submitKey()" class="modal-btn">▶</button>
       </div>
-    </div>
-
-    <div class="section-label">🏙 Точки мониторинга</div>
-    <div class="district-list" id="district-list"></div>
-
-    <div class="section-label">💡 Рекомендации</div>
-    <div class="advice-box">
-      <div class="advice-title">На основе текущих данных</div>
-      <div id="advice-content"><div class="advice-item"><span>⏳</span><span>Ожидаем данные...</span></div></div>
-    </div>
-
-    <div class="section-label">📊 Шкала AQI</div>
-    <div class="legend-box">
-      <div class="legend-title">Индекс качества воздуха</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div><span>Хорошее</span><span class="legend-range">0–50</span></div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#eab308"></div><span>Умеренное</span><span class="legend-range">51–100</span></div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f97316"></div><span>Нездоровое для уязвимых</span><span class="legend-range">101–150</span></div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div><span>Нездоровое</span><span class="legend-range">151–200</span></div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#9333ea"></div><span>Очень нездоровое</span><span class="legend-range">201+</span></div>
-    </div>
-
-    <div class="source-badge">
-      🛰 Данные: <a href="https://waqi.info" target="_blank">World Air Quality Index</a> (WAQI)<br>
-      Проект учеников 8 класса · Туркестан 2025
+      <div id="key-error" class="modal-error">❌ Токен не работает. Проверьте и попробуйте снова.</div>
     </div>
   </div>
 
-  <div id="map"></div>
-</div>
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loading-logo">АУА</div>
+    <div class="loading-text" id="loading-text">Загружаем данные о воздухе Туркестана...</div>
+    <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar"></div></div>
+  </div>
 
-<script>
-// ─────────────────────────────────────────────
-// WAQI СТАНЦИИ вокруг Туркестана
-// WAQI ищет ближайшую станцию по координатам
-// ─────────────────────────────────────────────
-const STATIONS = [
-  { id: 'center',   name: 'Центр города',       emoji: '🕌', lat: 43.2975, lon: 68.2698 },
-  { id: 'north',    name: 'Северный район',      emoji: '🏘', lat: 43.330,  lon: 68.270  },
-  { id: 'south',    name: 'Южный район',         emoji: '🌿', lat: 43.265,  lon: 68.270  },
-  { id: 'east',     name: 'Восточный район',     emoji: '🏗', lat: 43.297,  lon: 68.320  },
-  { id: 'west',     name: 'Западный район',      emoji: '🏠', lat: 43.297,  lon: 68.220  },
-  { id: 'industry', name: 'Промышленная зона',   emoji: '🏭', lat: 43.315,  lon: 68.305  },
-];
+  <!-- Header -->
+  <header>
+    <div class="logo">АУА<span> / ауа</span></div>
+    <div class="header-center">
+      <div class="header-title">Мониторинг воздуха</div>
+      <div class="header-location">📍 Туркестан, Казахстан</div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill" id="status-pill">
+        <div class="pulse" id="pulse-dot"></div>
+        <span id="status-text">Загрузка...</span>
+      </div>
+      <button id="token-btn" class="token-btn" onclick="openTokenModal()">🔑 WAQI токен</button>
+    </div>
+  </header>
 
-let TOKEN    = '';
-let IS_DEMO  = false;
-let mapObj   = null;
-let layers   = {};
-let allData  = {};
+  <!-- Layout -->
+  <div class="layout">
 
-// ─────────────────────────────────────────────
-// AQI helpers
-// ─────────────────────────────────────────────
-function aqiColor(v) {
-  if (v <= 50)  return '#22c55e';
-  if (v <= 100) return '#eab308';
-  if (v <= 150) return '#f97316';
-  if (v <= 200) return '#ef4444';
-  return '#9333ea';
-}
+    <!-- Sidebar -->
+    <aside class="sidebar">
 
-function aqiLabel(v) {
-  if (v <= 50)  return 'Хорошее';
-  if (v <= 100) return 'Умеренное';
-  if (v <= 150) return 'Нездоровое для уязвимых';
-  if (v <= 200) return 'Нездоровое';
-  return 'Очень нездоровое';
-}
-
-function getAdvice(aqi) {
-  if (aqi <= 50) return [
-    ['✅', 'Воздух чистый — отличный день для прогулки'],
-    ['🏃', 'Спорт на улице безопасен для всех'],
-    ['🪟', 'Можно открывать окна для проветривания'],
-  ];
-  if (aqi <= 100) return [
-    ['⚠️', 'Чувствительным людям ограничить время на улице'],
-    ['🧒', 'Детям и пожилым — прогулки до 1–2 часов'],
-    ['🪟', 'Утром окна лучше держать закрытыми'],
-  ];
-  if (aqi <= 150) return [
-    ['🚫', 'Чувствительным группам не выходить на улицу'],
-    ['😷', 'При выходе использовать маску FFP2'],
-    ['🏠', 'По возможности оставайтесь дома'],
-    ['💧', 'Пейте больше воды, избегайте нагрузок'],
-  ];
-  return [
-    ['🚨', 'Опасный уровень — оставайтесь дома'],
-    ['😷', 'Обязательна маска N95 или FFP3'],
-    ['🏥', 'Астматикам и сердечникам — проконсультируйтесь с врачом'],
-    ['🪟', 'Закройте окна, используйте воздухоочиститель'],
-  ];
-}
-
-// ─────────────────────────────────────────────
-// DEMO DATA
-// ─────────────────────────────────────────────
-function getDemoData(station) {
-  const base = { center: 87, north: 42, south: 95, east: 55, west: 38, industry: 142 };
-  const aqi  = base[station.id] + Math.floor(Math.random() * 8 - 4);
-  return {
-    aqi,
-    station: station.name + ' (демо)',
-    iaqi: {
-      pm25: { v: +(aqi * 0.28).toFixed(1) },
-      pm10: { v: +(aqi * 0.47).toFixed(1) },
-      co:   { v: +(aqi * 0.009).toFixed(2) },
-      no2:  { v: +(aqi * 0.21).toFixed(1) },
-      o3:   { v: +(aqi * 0.72).toFixed(1) },
-      so2:  { v: +(aqi * 0.10).toFixed(1) },
-    }
-  };
-}
-
-// ─────────────────────────────────────────────
-// FETCH from WAQI
-// ─────────────────────────────────────────────
-async function fetchStation(station) {
-  if (IS_DEMO) return getDemoData(station);
-
-  try {
-    // WAQI geo lookup — finds nearest real station
-    const url  = `https://api.waqi.info/feed/geo:${station.lat};${station.lon}/?token=${TOKEN}`;
-    const res  = await fetch(url);
-    const json = await res.json();
-
-    if (json.status !== 'ok') throw new Error(json.data);
-
-    const d = json.data;
-    return {
-      aqi:     d.aqi,
-      station: d.city?.name || station.name,
-      iaqi:    d.iaqi || {},
-      time:    d.time?.s || '',
-    };
-  } catch (e) {
-    console.warn('WAQI error for', station.name, e);
-    return getDemoData(station);
-  }
-}
-
-// ─────────────────────────────────────────────
-// MAP MARKER
-// ─────────────────────────────────────────────
-function addMarker(station, data) {
-  const { aqi, station: stName, iaqi } = data;
-  const color  = aqiColor(aqi);
-  const label  = aqiLabel(aqi);
-  const radius = 500 + (Math.min(aqi, 300) / 300) * 900;
-
-  // Remove old layers
-  if (layers[station.id]) {
-    layers[station.id].forEach(l => mapObj.removeLayer(l));
-  }
-
-  const circle = L.circle([station.lat, station.lon], {
-    radius,
-    color,
-    fillColor: color,
-    fillOpacity: 0.2,
-    weight: 2,
-    opacity: 0.65,
-  }).addTo(mapObj);
-
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="
-      background:rgba(10,14,26,0.9);
-      border:1.5px solid ${color};
-      border-radius:10px;
-      padding:6px 10px;
-      text-align:center;
-      backdrop-filter:blur(8px);
-      box-shadow:0 4px 20px rgba(0,0,0,0.5),0 0 12px ${color}33;
-      white-space:nowrap;
-      pointer-events:none;
-    ">
-      <div style="font-size:9px;color:#6b7280;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px;">${station.emoji} ${station.name}</div>
-      <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:800;color:${color};line-height:1">${aqi}</div>
-      <div style="font-size:9px;color:${color};opacity:0.85;margin-top:1px;">${label}</div>
-    </div>`,
-    iconAnchor: [65, 32],
-    iconSize:   [130, 64],
-  });
-
-  const marker = L.marker([station.lat, station.lon], { icon }).addTo(mapObj);
-
-  const popup = `
-    <div class="popup-inner">
-      <div class="popup-name">${station.emoji} ${station.name}</div>
-      <div class="popup-aqi-row">
-        <div class="popup-aqi-num" style="color:${color}">${aqi}</div>
-        <div class="popup-aqi-info">
-          <div class="popup-badge" style="background:${color}22;color:${color}">${label}</div>
-          <div class="popup-coords">${station.lat.toFixed(3)}°N · ${station.lon.toFixed(3)}°E</div>
+      <div class="aqi-hero">
+        <div class="aqi-label">Общий индекс AQI · Туркестан</div>
+        <div class="aqi-row">
+          <div class="aqi-number" id="main-aqi">—</div>
+          <div class="aqi-badge" id="main-badge">—</div>
+        </div>
+        <div class="aqi-bar-track">
+          <div class="aqi-bar-fill" id="main-bar"></div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric"><div class="metric-name">PM2.5</div><div class="metric-val"><span id="m-pm25">—</span> <span class="metric-unit">μg/m³</span></div></div>
+          <div class="metric"><div class="metric-name">PM10</div><div class="metric-val"><span id="m-pm10">—</span> <span class="metric-unit">μg/m³</span></div></div>
+          <div class="metric"><div class="metric-name">CO</div><div class="metric-val"><span id="m-co">—</span> <span class="metric-unit">ppm</span></div></div>
+          <div class="metric"><div class="metric-name">NO₂</div><div class="metric-val"><span id="m-no2">—</span> <span class="metric-unit">ppb</span></div></div>
+          <div class="metric"><div class="metric-name">O₃</div><div class="metric-val"><span id="m-o3">—</span> <span class="metric-unit">ppb</span></div></div>
+          <div class="metric"><div class="metric-name">SO₂</div><div class="metric-val"><span id="m-so2">—</span> <span class="metric-unit">ppb</span></div></div>
         </div>
       </div>
-      <div class="popup-metrics">
-        <div class="popup-metric"><div class="popup-metric-label">PM2.5</div><div class="popup-metric-val">${iaqi.pm25?.v ?? '—'}</div></div>
-        <div class="popup-metric"><div class="popup-metric-label">PM10</div><div class="popup-metric-val">${iaqi.pm10?.v ?? '—'}</div></div>
-        <div class="popup-metric"><div class="popup-metric-label">NO₂</div><div class="popup-metric-val">${iaqi.no2?.v ?? '—'}</div></div>
-        <div class="popup-metric"><div class="popup-metric-label">O₃</div><div class="popup-metric-val">${iaqi.o3?.v ?? '—'}</div></div>
-        <div class="popup-metric"><div class="popup-metric-label">SO₂</div><div class="popup-metric-val">${iaqi.so2?.v ?? '—'}</div></div>
-        <div class="popup-metric"><div class="popup-metric-label">CO</div><div class="popup-metric-val">${iaqi.co?.v ?? '—'}</div></div>
+
+      <div class="section-label">🏙 Точки мониторинга</div>
+      <div class="district-list" id="district-list"></div>
+
+      <div class="section-label">💡 Рекомендации</div>
+      <div class="advice-box">
+        <div class="advice-title">На основе текущих данных</div>
+        <div id="advice-content"><div class="advice-item"><span>⏳</span><span>Ожидаем данные...</span></div></div>
       </div>
-      <div class="popup-source">📡 WAQI · ${stName}</div>
-    </div>`;
 
-  circle.bindPopup(popup);
-  marker.bindPopup(popup);
-
-  layers[station.id] = [circle, marker];
-}
-
-// ─────────────────────────────────────────────
-// SIDEBAR
-// ─────────────────────────────────────────────
-function renderSidebar() {
-  // Districts list
-  const list = document.getElementById('district-list');
-  list.innerHTML = '';
-
-  STATIONS.forEach(s => {
-    const d = allData[s.id];
-    if (!d) return;
-    const color = aqiColor(d.aqi);
-
-    const item = document.createElement('div');
-    item.className = 'district-item';
-    item.innerHTML = `
-      <div class="district-dot" style="background:${color};box-shadow:0 0 6px ${color}66"></div>
-      <div class="district-info">
-        <div class="district-name">${s.emoji} ${s.name}</div>
-        <div class="district-sub">${aqiLabel(d.aqi)}</div>
+      <div class="section-label">📊 Шкала AQI</div>
+      <div class="legend-box">
+        <div class="legend-title">Индекс качества воздуха</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div><span>Хорошее</span><span class="legend-range">0–50</span></div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#eab308"></div><span>Умеренное</span><span class="legend-range">51–100</span></div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#f97316"></div><span>Нездоровое для уязвимых</span><span class="legend-range">101–150</span></div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div><span>Нездоровое</span><span class="legend-range">151–200</span></div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#9333ea"></div><span>Очень нездоровое</span><span class="legend-range">201+</span></div>
       </div>
-      <div class="district-aqi" style="color:${color}">${d.aqi}</div>`;
 
-    item.addEventListener('click', () => {
-      mapObj.flyTo([s.lat, s.lon], 14, { duration: 0.8 });
-      layers[s.id]?.[0]?.openPopup();
-      document.querySelectorAll('.district-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-    });
+      <div class="source-badge">
+        🛰 Данные: <a href="https://waqi.info" target="_blank">World Air Quality Index</a> (WAQI)<br>
+        Проект учеников 8 класса · Туркестан 2025
+      </div>
 
-    list.appendChild(item);
-  });
+    </aside>
 
-  // Main AQI (average)
-  const values = STATIONS.map(s => allData[s.id]?.aqi).filter(Boolean);
-  if (!values.length) return;
+    <!-- Map -->
+    <div id="map"></div>
 
-  const avg   = Math.round(values.reduce((a, b) => a + b) / values.length);
-  const color = aqiColor(avg);
-  const pct   = Math.min((avg / 300) * 100, 100).toFixed(1);
+  </div>
 
-  document.getElementById('main-aqi').textContent = avg;
-  document.getElementById('main-aqi').style.color = color;
-
-  const badge = document.getElementById('main-badge');
-  badge.textContent        = aqiLabel(avg);
-  badge.style.background   = color + '22';
-  badge.style.color        = color;
-
-  const bar = document.getElementById('main-bar');
-  bar.style.width      = pct + '%';
-  bar.style.background = `linear-gradient(90deg,#22c55e,${color})`;
-
-  // Metrics from center
-  const c = allData['center'];
-  if (c?.iaqi) {
-    document.getElementById('m-pm25').textContent = c.iaqi.pm25?.v ?? '—';
-    document.getElementById('m-pm10').textContent = c.iaqi.pm10?.v ?? '—';
-    document.getElementById('m-co').textContent   = c.iaqi.co?.v   ?? '—';
-    document.getElementById('m-no2').textContent  = c.iaqi.no2?.v  ?? '—';
-    document.getElementById('m-o3').textContent   = c.iaqi.o3?.v   ?? '—';
-    document.getElementById('m-so2').textContent  = c.iaqi.so2?.v  ?? '—';
-  }
-
-  // Advice
-  document.getElementById('advice-content').innerHTML =
-    getAdvice(avg).map(([icon, text]) =>
-      `<div class="advice-item"><span>${icon}</span><span>${text}</span></div>`
-    ).join('');
-
-  // Status pill
-  const pill = document.getElementById('status-pill');
-  pill.style.background    = color + '18';
-  pill.style.borderColor   = color + '44';
-  pill.style.color         = color;
-  document.getElementById('pulse-dot').style.background = color;
-  document.getElementById('status-text').textContent =
-    (IS_DEMO ? '🎭 Демо · ' : '🛰 WAQI · ') +
-    new Date().toLocaleTimeString('ru-KZ', { hour: '2-digit', minute: '2-digit' });
-}
-
-// ─────────────────────────────────────────────
-// INIT MAP
-// ─────────────────────────────────────────────
-function initMap() {
-  mapObj = L.map('map', { center: [43.2975, 68.2698], zoom: 13 });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(mapObj);
-}
-
-// ─────────────────────────────────────────────
-// LOAD ALL DATA
-// ─────────────────────────────────────────────
-async function loadAll() {
-  const bar = document.getElementById('loading-bar');
-  const txt = document.getElementById('loading-text');
-
-  const total = STATIONS.length;
-  let done    = 0;
-
-  await Promise.all(STATIONS.map(async s => {
-    const data  = await fetchStation(s);
-    allData[s.id] = data;
-    addMarker(s, data);
-    done++;
-    bar.style.width = (done / total * 100) + '%';
-    txt.textContent = `Загружаем: ${s.name}...`;
-  }));
-
-  renderSidebar();
-
-  setTimeout(() => {
-    document.getElementById('loading').classList.add('hidden');
-    setTimeout(() => document.getElementById('loading').remove(), 600);
-  }, 600);
-}
-
-// ─────────────────────────────────────────────
-// KEY OVERLAY HANDLERS
-// ─────────────────────────────────────────────
-async function submitKey() {
-  const val = document.getElementById('key-input').value.trim();
-  if (!val) return;
-
-  // Quick validation — test with Turkestan
-  try {
-    const res  = await fetch(`https://api.waqi.info/feed/geo:43.2975;68.2698/?token=${val}`);
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error();
-    TOKEN = val;
-    startApp();
-  } catch {
-    document.getElementById('key-error').style.display = 'block';
-  }
-}
-
-function useDemo() {
-  IS_DEMO = true;
-  startApp();
-}
-
-function startApp() {
-  document.getElementById('key-overlay').remove();
-  document.getElementById('loading').style.display = 'flex';
-  initMap();
-  loadAll();
-  // Auto refresh every 10 min
-  setInterval(loadAll, 10 * 60 * 1000);
-}
-
-// Enter key on input
-document.getElementById('key-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitKey();
-});
-</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/helpers.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
