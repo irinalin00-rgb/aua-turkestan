@@ -12,8 +12,8 @@ function initMap() {
     zoom:   MAP_ZOOM,
   });
 
-  // Тёмная тема карты (CartoDB Dark Matter — бесплатно, без ключа)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Светлая карта — CartoDB Positron
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
     subdomains:  'abcd',
     maxZoom:     19,
@@ -27,21 +27,21 @@ function addMarker(station, data) {
   const label  = aqiLabel(aqi);
 
   // Радиус круга — больше при высоком загрязнении
-  const radius = 500 + (Math.min(aqi, 300) / 300) * 900;
+  const radius = 800 + (Math.min(aqi, 300) / 300) * 700;
 
   // Удалить старые слои
   if (layers[station.id]) {
     layers[station.id].forEach(l => mapObj.removeLayer(l));
   }
 
-  // Цветной круг зоны
+  // Цветной круг зоны — яркий, чёткий
   const circle = L.circle([station.lat, station.lon], {
     radius,
     color,
     fillColor:   color,
-    fillOpacity: 0.2,
-    weight:      2,
-    opacity:     0.65,
+    fillOpacity: 0.45,
+    weight:      3,
+    opacity:     1,
   }).addTo(mapObj);
 
   // Подпись с числом AQI
@@ -49,23 +49,22 @@ function addMarker(station, data) {
     className: '',
     html: `
       <div style="
-        background: rgba(10,14,26,0.9);
-        border: 1.5px solid ${color};
-        border-radius: 10px;
-        padding: 6px 10px;
+        background: #ffffff;
+        border: 2.5px solid ${color};
+        border-radius: 12px;
+        padding: 7px 12px;
         text-align: center;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 12px ${color}33;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 4px ${color}22;
         white-space: nowrap;
         pointer-events: none;
       ">
-        <div style="font-size:9px;color:#6b7280;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px;">
+        <div style="font-size:9px;color:#374151;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px;font-weight:600;">
           ${station.emoji} ${station.name}
         </div>
-        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:800;color:${color};line-height:1">
+        <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:800;color:${color};line-height:1">
           ${aqi}
         </div>
-        <div style="font-size:9px;color:${color};opacity:0.85;margin-top:1px;">
+        <div style="font-size:9px;color:${color};font-weight:700;margin-top:2px;">
           ${label}
         </div>
       </div>`,

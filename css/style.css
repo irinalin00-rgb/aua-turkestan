@@ -583,34 +583,33 @@ header {
 }
 
 .leaflet-container {
-  background: #0d1525 !important;
+  background: #f4f4f0 !important;
   font-family: 'Inter', sans-serif;
 }
 
 /* Popups */
 .leaflet-popup-content-wrapper {
-  background: rgba(17,24,39,0.97);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  color: var(--text);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  color: #111827;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
 }
-.leaflet-popup-tip { background: rgba(17,24,39,0.97); }
-.leaflet-popup-close-button { color: var(--muted) !important; }
+.leaflet-popup-tip { background: #ffffff; }
+.leaflet-popup-close-button { color: #6b7280 !important; }
 
 .popup-inner { padding: 4px 2px; min-width: 200px; }
-.popup-name { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.popup-name { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #111827; }
 .popup-aqi-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .popup-aqi-num { font-family: 'Unbounded', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; }
 .popup-aqi-info { display: flex; flex-direction: column; gap: 2px; }
 .popup-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; }
-.popup-coords { font-size: 10px; color: var(--muted); }
+.popup-coords { font-size: 10px; color: #6b7280; }
 .popup-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.popup-metric { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; font-size: 11px; }
-.popup-metric-label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
-.popup-metric-val { font-weight: 600; margin-top: 2px; }
-.popup-source { font-size: 10px; color: var(--muted); margin-top: 8px; text-align: right; }
+.popup-metric { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 8px; font-size: 11px; }
+.popup-metric-label { color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+.popup-metric-val { font-weight: 600; margin-top: 2px; color: #111827; }
+.popup-source { font-size: 10px; color: #9ca3af; margin-top: 8px; text-align: right; }
 
 /* ═══════════════════════════════
    АДАПТИВ
